@@ -1,0 +1,83 @@
+{
+    "state_attrs": {
+        "default": ["gen_p",  "gen_theta", "load_p", "load_theta", "rho", "current_step", "time_before_cooldown_line"],
+
+        "topology": ["topo_vect", "line_status", "timestep_overflow", "time_before_cooldown_sub"],
+
+        "redispatch": ["target_dispatch", "actual_dispatch", "gen_margin_up", "gen_margin_down"],
+
+        "curtailment": ["gen_p_before_curtail", "curtailment", "curtailment_limit"],
+
+        "maintenance": ["time_next_maintenance", "duration_next_maintenance"],
+
+        "storage": ["storage_charge", "storage_power_target", "storage_power", "storage_theta"],
+
+        "extra": ["gen_v", "load_v", "gen_q", "load_q", "p_or", "q_or", "v_or", "a_or", "theta_or", "p_ex", "q_ex", "v_ex", "a_ex", "theta_ex"]
+    },
+
+    "environments": {
+        "bus14": {
+            "grid2op_id": "l2rpn_case14_sandbox",
+            "renewable": true,
+            "maintenance": false,
+            "opponent": false,
+            "battery": false,
+            "difficulty": 2
+        },
+
+        "bus36-M": {
+            "grid2op_id": "l2rpn_wcci_2020",
+            "renewable": true,
+            "maintenance": true,
+            "opponent": false,
+            "battery": false,
+            "difficulty": 5
+        },
+
+        "bus36-MO-v0": {
+            "grid2op_id": "l2rpn_neurips_2020_track1_small",
+            "renewable": true,
+            "maintenance": true,
+            "opponent": true,
+            "battery": false,
+            "difficulty": 5
+        },
+
+        "bus36-MO-v1": {
+            "grid2op_id": "l2rpn_icaps_2021_small",
+            "renewable": true,
+            "maintenance": true,
+            "opponent": true,
+            "battery": false,
+            "difficulty": 5
+        },
+        
+        "bus118-M": {
+            "grid2op_id": "l2rpn_neurips_2020_track2_small",
+            "renewable": true,
+            "maintenance": true,
+            "opponent": false,
+            "battery": false,
+            "difficulty": 5
+        },  
+        
+        "bus118-MOB-v0": {
+            "grid2op_id": "l2rpn_wcci_2022",
+            "renewable": true,
+            "maintenance": true,
+            "opponent": true,
+            "battery": true,
+            "difficulty": 5
+        },
+
+        "bus118-MOB-v1": {
+            "grid2op_id": "l2rpn_idf_2023",
+            "renewable": true,
+            "maintenance": true,
+            "opponent": true,
+            "battery": true,
+            "difficulty": 5
+        }
+    }
+
+}
