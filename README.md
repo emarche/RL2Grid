@@ -32,7 +32,3 @@ Run the *main.py* with the desired set of parameters and task configuration. The
 ## First execution 
 
 In order the run an experiment using asynchronous (vectorized) environments, the underlying Grid2Op framework requires generating and save an instance of the environment. To do so, you should run the *main.py* and set *generate_class* to True. After that, you can run an experiment in the specified environment by running the *main.py* with the desired hyperparameters.
-
-## Reproducibility
-
-To reproduce our results, run the list of experiments specified in "experiments.txt"
