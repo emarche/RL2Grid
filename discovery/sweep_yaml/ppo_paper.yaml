@@ -1,0 +1,124 @@
+program: '../main.py'
+method: grid
+name: rl2grid
+parameters:
+
+  # Env 
+  env-id:
+    values:
+      - 'bus14'
+      #- 'bus36-MO-v0'
+      #- 'bus118-M'
+      #- 'bus118-MOB-v0'
+
+  n-envs:
+    values:
+      - 20  # must be multiple of 10
+
+  eval-freq:
+    values:
+      - 10000
+
+  n-step:
+    values:
+      - 1000
+      #- 2000
+
+  n-threads:
+    values:
+      - 8
+
+  action-type:
+    values:
+      - 'topology'
+      #- 'redispatch'
+
+  difficulty:
+    values:
+      - 0
+      - 1
+      #- 2
+      #- 3
+      #- 4
+
+  use-heuristic:
+    values:
+      - False
+      #- True
+
+  # Main
+  alg:
+    values:
+      - 'PPO'
+  
+  seed:
+    values: [0, 1, 2, 3, 4]
+
+  track:
+    values:
+      - True
+
+  verbose:
+    values:
+      - False
+
+  wandb-entity:
+    values:
+      - emarche
+
+  wandb-project:
+    values:
+      - rl2grid_paper_final
+
+  wandb-mode:
+    values:
+      - offline
+
+  # PPO
+  actor-layers:
+    values:
+      #- 256 128
+      - 512 256
+      #- 256 128 64  # bus14 T (0, 1)
+      #- 512 256 128 # bus36-MO-v0 T (0, 1), bus118-M T (0, 1), bus118-MOB-v0 T (0, 1)
+      #- 512 256 256 128 # bus36-MO-v0 T (2), bus118-M T (2), bus118-MOB-v0 T (2)
+     # - 2048 2048 1024 1024 # bus36-MO-v0 T (3, 4), bus118-M T (3, 4), bus118-MOB-v0 T (3, 4)
+
+
+  critic-layers:
+    values:
+      #- 256 128
+      - 512 256
+      #- 512 256 128  # bus14 T (0, 1), bus36-MO-v0 T (0, 1), bus118-M T (0, 1), bus118-MOB-v0 T (0, 1)
+      #- 512 256 256 128 # bus36-MO-v0 T (2), bus118-M T (2), bus118-MOB-v0 T (2)
+      #- 2048 2048 1024 1024 # bus36-MO-v0 T (3, 4), bus118-M T (3, 4), bus118-MOB-v0 T (3, 4)
+
+  actor-act-fn:
+    values:
+      - relu
+      #- tanh
+
+  critic-act-fn:
+    values:
+      - relu
+      #- tanh
+    
+  total-timesteps:
+    values:
+      - 30000000
+
+  actor-lr:
+    values:
+      - 0.00025
+      #- 0.000025  
+
+  critic-lr:
+    values:
+      - 0.00025
+      #- 0.000025 
+
+  gamma:
+    values:
+      - 0.9  # all
+
+
