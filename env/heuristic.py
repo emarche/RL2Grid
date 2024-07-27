@@ -85,12 +85,13 @@ class GridOp(gym.Wrapper, ABC):
         Returns:
             A tuple containing the initial observation and additional info.
         """
-        _, info = super().reset(**kwargs)  # Reset the underlying scenario
-        self.ep_reward = 0.
+        done = True     # It could happen that an episode ends in the reset step
+        while done:     # Without this it would not get reset and crash on the env.step(...)
+            _, info = super().reset(**kwargs)  # Reset the underlying scenario
+            self.ep_reward = 0.
+            if not self._risk_overflow:
+                done, info = self.apply_actions()  # None of the episodes can be solved with only "do_nothing" actions
 
-        if not self._risk_overflow:
-            _, info = self.apply_actions()  # None of the episodes can be solved with only "do_nothing" actions
-          
         return self.observation_space.to_gym(self._obs), info
 
 class GridOpIdle(GridOp):
