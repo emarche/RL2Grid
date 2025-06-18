@@ -1,4 +1,4 @@
-name: rl2grid_v1
+name: rl2grid
 channels:
   - defaults
   - conda-forge
