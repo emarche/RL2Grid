@@ -11,3 +11,4 @@ __pycache__/
 
 # Exclude the action spaces folder
 env/action_spaces/
+discovery/

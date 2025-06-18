@@ -28,7 +28,3 @@ The user must set up [wandb](https://wandb.ai/home) to run and log the results o
 ## Usage
 
 Run the *main.py* with the desired set of parameters and task configuration. There are several parameters useful to log the results of a training run (see *main.py* argument parser as well as the algorithm-specific parameters under *alg/<algorithm>/config.py*
-
-## First execution 
-
-In order the run an experiment using asynchronous (vectorized) environments, the underlying Grid2Op framework requires generating and save an instance of the environment. To do so, you should run the *main.py* and set *generate_class* to True. After that, you can run an experiment in the specified environment by running the *main.py* with the desired hyperparameters.

@@ -78,7 +78,6 @@ class DQN:
         try:
             for step in range(init_step, int(args.total_timesteps // args.n_envs)):
                 global_step += args.n_envs
-
                 epsilon = linear_schedule(
                     args.eps_start, args.eps_end, args.eps_decay_frac * args.total_timesteps, global_step
                 )
@@ -87,12 +86,13 @@ class DQN:
                 else:
                     with th.no_grad():
                         actions = qnet.get_action(th.tensor(obs).to(device)).cpu().numpy()
-                        
+
                 next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-    
+
                 real_next_obs = next_obs.copy()
                 for idx, done in enumerate(np.logical_or(terminations, truncations)):
                     if done: real_next_obs[idx] = infos["final_observation"][idx]
+                
                 rb.add(obs, real_next_obs, actions, rewards, terminations, infos)
 
                 obs = next_obs
@@ -110,8 +110,9 @@ class DQN:
                             td_target = data.rewards.flatten() + args.gamma * tg_mac * (1 - data.dones.flatten())
 
                         old_val = qnet(data.observations).gather(1, data.actions).squeeze()
+                        
                         loss = F.mse_loss(td_target, old_val)
-
+                        
                         # Optimize the model
                         qnet_optim.zero_grad()
                         loss.backward()

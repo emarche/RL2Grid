@@ -1,18 +1,29 @@
 import os
 import json
+from packaging import version
 
 from gymnasium.wrappers import NormalizeObservation, NormalizeReward
 import grid2op
+from grid2op.Chronics import MultifolderWithCache, Multifolder
 from grid2op.gym_compat import GymEnv, BoxGymObsSpace, BoxGymActSpace, DiscreteActSpace # if we import gymnasium, GymEnv will convert to Gymnasium!   
-from grid2op.Reward import CombinedReward, IncreasingFlatReward, DistanceReward
+from grid2op.Reward import CombinedReward
 from lightsim2grid import LightSimBackend
 
 from common.imports import *
-from .reward import LineMarginReward, RedispRewardv1
+from .cmdp import ConstrainedFailureGridOp, ConstrainedOverloadGridOp
+from .reward import LineMarginReward, RedispRewardv1, N1ContingencyRewardv1, IncreasingFlatRewardv1, FlatRewardv1, DistanceRewardv1, OverloadReward
 from .heuristic import GridOpRecoAndRevertBus, GridOpIdle
+
+from time import time
 
 # Get the directory of the current module
 ENV_DIR = os.path.dirname(__file__)
+
+MIN_GLOP_VERSION = version.parse('1.10.4.dev1')
+if version.parse(grid2op.__version__) < MIN_GLOP_VERSION:
+    raise RuntimeError(f"Please upgrade to grid2op >= {MIN_GLOP_VERSION}."
+                       "You might need to install it from github "
+                       "`pip install git+https://github.com/rte-france/grid2op.git@dev_1.10.4`")
 
 def load_config(file_path: str) -> Dict:
     """Load configuration from a JSON file.
@@ -49,14 +60,14 @@ def norm_action_limits(gym_env: GymEnv, attrs: List[str]) -> Tuple[Dict[str, np.
         low = attr_box.low[feasible_acts]
         high = attr_box.high[feasible_acts]
         
-        # Calculate range, multiplicative factor, and additive factor
-        range = high - low
-        mult_factor[attr] = range
+        # Calculate range r, multiplicative factor, and additive factor
+        r = high - low
+        mult_factor[attr] = r
         add_factor[attr] = low
 
     return mult_factor, add_factor
 
-def make_env(args: Dict[str, Any], idx: int, resume_run: bool = False, generate_class: bool = False, async_vec_env: bool = False) -> Any:
+def auxiliary_make_env(args: Dict[str, Any], resume_run: bool = False, idx: int = 0, generate_class: bool = False, async_vec_env: bool = False, action_space = None, eval_env: bool = False) -> Any:
     """Create and configure a grid2op environment.
 
     Args:
@@ -65,75 +76,97 @@ def make_env(args: Dict[str, Any], idx: int, resume_run: bool = False, generate_
         resume_run: Whether to resume a previous run.
         generate_class: Whether to generate classes for asynchronous environments.
         async_vec_env: Whether the environment is asynchronous.
+        action_space: A previously generated action space for the agents (to share between processes)
 
     Returns:
         A configured grid2op environment wrapped in a GymEnv.
     """
-    def thunk():
-        config = load_config(args.env_config_path)  # Load environment configuration
-        env_id = args.env_id
-        env_type = args.action_type.lower()
-        difficulty = args.difficulty
+    config = load_config(args.env_config_path)  # Load environment configuration
+    env_id = args.env_id
+    env_type = args.action_type.lower()
+    difficulty = args.difficulty
 
-        env_config = config['environments']
-        assert env_id in env_config.keys(), f"Invalid environment ID: {env_id}. Available IDs are: {env_config.keys()}"
+    env_config = config['environments']
+    assert env_id in env_config.keys(), f"Invalid environment ID: {env_id}. Available IDs are: {env_config.keys()}"
 
-        env_types = ["topology", "redispatch"]
-        assert env_type in env_types, f"Invalid environment type: {env_type}. Available IDs are: {env_types}"
+    env_types = ["topology", "redispatch"]
+    assert env_type in env_types, f"Invalid environment type: {env_type}. Available IDs are: {env_types}"
 
-        max_difficulty = env_config[env_id]['difficulty']
-        assert difficulty < max_difficulty, f"Invalid difficulty: {difficulty}. Difficulty limit is : {max_difficulty-1}"
-           
-        # Create a grid2op environment with specified backend and reward structure
-        g2op_env = grid2op.make(
-            env_config[env_id]['grid2op_id'], 
-            reward_class=CombinedReward, 
-            experimental_read_from_local_dir=True if async_vec_env else False,
-            #other_rewards={f"line_{l_id}": N1Reward(l_id=l_id) for l_id in range(186)}
-            backend=LightSimBackend()
-        ) 
-        cr = g2op_env.get_reward_instance()  # Initialize the combined reward instance
-        # Per step (cumulative) positive reward for staying alive; reaches 1 at the end of the episode
-        cr.addReward("IncreasingFlatReward", 
-                    IncreasingFlatReward(per_timestep=1/g2op_env.chronics_handler.max_episode_duration()),
-                    0.1)
-        if env_type == 'topology': 
-           cr.addReward("TopologyReward", DistanceReward(), 0.3)   # = 1 if topology is the original one, 0 if everything changed
-        #else:   # TODO remove else -> redispatch should be higher weighted
-        cr.addReward("redispatchReward", RedispRewardv1(), 0.3 if env_type == 'topology' else 0.6)  # Custom one, see common.rewards
-        cr.addReward("LineMarginReward", LineMarginReward(), 0.3)  # Custom one, see common.rewards
-        cr.initialize(g2op_env)  # Finalize the reward setup
-
-        g2op_env.chronics_handler.set_chunk_size(100)    # Instead of loading all episode data, get chunks of 100
-
-        if generate_class:
-            g2op_env.generate_classes()
-            print("Class generated offline for AsyncVecEnv execution")
-            quit()
+    max_difficulty = env_config[env_id]['difficulty']
+    assert difficulty < max_difficulty, f"Invalid difficulty: {difficulty}. Difficulty limit is : {max_difficulty-1}"
         
-        gym_env = GymEnv(g2op_env, shuffle_chronics=True)  # Wrap the grid2op environment in a GymEnv
-        
-        # Making sure we can act on 1 sub / line status at the same step
-        p = gym_env.init_env.parameters
-        p.MAX_LINE_STATUS_CHANGED = 1 
-        p.MAX_SUB_CHANGED = 1 
-        gym_env.init_env.change_parameters(p)
+    # Create a grid2op environment with specified backend and reward structure
+    # Separate rewards for the eval env for logging
+    rewards = {}
+    if eval_env:
+        rewards['redispatchReward'] = RedispRewardv1()
+        rewards['lineMarginReward'] = LineMarginReward()
+        rewards['overloadReward'] = OverloadReward(constrained=args.constraints_type != 0)
+        if env_type == 'topology': rewards['topologyReward'] = DistanceRewardv1()
+    
+    if args.n1_reward:
+        rewards['n1ContingencyReward'] = N1ContingencyRewardv1(l_ids=list(range(env_config[env_id]['n_line'])), normalize=True)
+    
+    # With vec envs, infos return an array of dicts (one for each env) containing the rewards
+    g2op_env = grid2op.make(
+        env_config[env_id]['grid2op_id'], 
+        reward_class=CombinedReward, 
+        experimental_read_from_local_dir=True if async_vec_env else False,
+        backend=LightSimBackend(),
+        other_rewards=rewards,
+        chronics_class=Multifolder if args.optimize_mem else MultifolderWithCache 
+        #class_in_file=True
+    ) 
+    
+    if args.optimize_mem: g2op_env.chronics_handler.set_chunk_size(100)    # Instead of loading all episode data, get chunks of 100
+    else:
+        # Assign a filter (e.g., use only chronics that have "december" in their name) to reduce memory footprint
+        #env.chronics_handler.real_data.set_filter(lambda x: re.match(".*december.*", x) is not None)
+        # Create the cache; otherwise it'll only load the first scenario
+        g2op_env.chronics_handler.reset()
+    
+    cr = g2op_env.get_reward_instance()  # Initialize the combined reward instance
+    # Per step (cumulative) positive reward for staying alive; reaches 1 at the end of the episode
+    #cr.addReward("IncreasingFlatReward", 
+                #IncreasingFlatRewardv1(per_timestep=1/g2op_env.chronics_handler.max_episode_duration()),
+    #            1.0)
+    cr.addReward("FlatReward", FlatRewardv1(per_timestep=1), 1.0)
+    if not eval_env:
+        #if env_type == 'topology': cr.addReward("TopologyReward", DistanceRewardv1(), 0.3)   # = 0 if topology is the original one, -1 if everything changed
+        cr.addReward("redispatchReward", RedispRewardv1(), 0.5)  # Custom one, see common.rewards
+        #cr.addReward("LineMarginReward", LineMarginReward(), 0.5)  # Custom one, see common.rewards
+        cr.addReward("overloadReward", OverloadReward(constrained=args.constraints_type != 0), 1.0)  # Custom one, see common.rewards
 
-        # The .reset is required to change the parameters
-        if resume_run: gym_env.reset()   # NOTE: to use set_id, we first have to set gym_env's seed with a reset   
-        else: gym_env.reset(seed=args.seed+idx)
+    cr.initialize(g2op_env)  # Finalize the reward setup
 
-        gym_env.init_env.chronics_handler.shuffle()  # Shuffle the chronics
+    if generate_class:
+        g2op_env.generate_classes()
+        print("Class generated offline for AsyncVecEnv execution")
+        quit()
+    
+    gym_env = GymEnv(g2op_env, shuffle_chronics=True)  # Wrap the grid2op environment in a GymEnv
+    gym_env.action_space.close()
+    
+    # Making sure we can act on 1 sub / line status at the same step
+    p = gym_env.init_env.parameters
+    p.MAX_LINE_STATUS_CHANGED = 1 
+    p.MAX_SUB_CHANGED = 1 
+    gym_env.init_env.change_parameters(p)
 
-        # Prepare action and observation spaces
-        state_attrs = config['state_attrs']
-        obs_attrs = state_attrs['default']
-        if env_config[env_id]['maintenance']: obs_attrs += state_attrs['maintenance']
-        #if env_config[env_id]['opponent']: obs_attrs += state_attrs['curtailment']
+    # The .reset is required to change the parameters
+    if resume_run: gym_env.reset()   # NOTE: to use set_id, we first have to set gym_env's seed with a reset   
+    else: gym_env.reset(seed=args.seed+idx)
+    gym_env.init_env.chronics_handler.shuffle()  # Shuffle the chronics
 
-        if env_type == 'topology': 
-            obs_attrs += state_attrs['topology']
+    # Prepare action and observation spaces
+    state_attrs = config['state_attrs']
+    obs_attrs = state_attrs['default']
+    if env_config[env_id]['maintenance']: obs_attrs += state_attrs['maintenance']
 
+    if env_type == 'topology': 
+        obs_attrs += state_attrs['topology']
+
+        if action_space is None:
             # Set the actions space from the loaded list of (vectorized) actions
             loaded_action_space = np.load(f"{ENV_DIR}/action_spaces/{env_id}_action_space.npy", allow_pickle=True)
 
@@ -143,16 +176,20 @@ def make_env(args: Dict[str, Any], idx: int, resume_run: bool = False, generate_
                 g2op_env.action_space,
                 action_list=loaded_action_space[:n_actions[difficulty]]
             )
-        else:
-            actions_to_keep = ['redispatch', 'curtail']
+        else: gym_env.action_space = action_space
+    else:
+        actions_to_keep = ['redispatch']
+        # Older environments don't support curtailment
+        if env_config[env_id]['curtail']: actions_to_keep.append('curtail')
 
-            obs_attrs += state_attrs['redispatch']
-            if env_config[env_id]['renewable']: 
-                obs_attrs += state_attrs['curtailment']
-            if env_config[env_id]['battery']:
-                obs_attrs += state_attrs['storage']
-                actions_to_keep += ['set_storage']
-        
+        obs_attrs += state_attrs['redispatch']
+        if env_config[env_id]['renewable'] : 
+            obs_attrs += state_attrs['curtailment']
+        if env_config[env_id]['battery']:
+            obs_attrs += state_attrs['storage']
+            actions_to_keep += ['set_storage']
+    
+        if action_space is None:
             # Normalize action limits for selected attributes
             mult_factor, add_factor = norm_action_limits(gym_env, actions_to_keep)
 
@@ -162,25 +199,28 @@ def make_env(args: Dict[str, Any], idx: int, resume_run: bool = False, generate_
                 multiply=mult_factor,   
                 add=add_factor
             )
-            
-        # Set the observation space
-        gym_env.observation_space = BoxGymObsSpace(gym_env.init_env.observation_space,
-                                            attr_to_keep=obs_attrs,
-                                            #divide={"gen_p": gym_env.init_env.gen_pmax,
-                                            #        "actual_dispatch": gym_env.init_env.gen_pmax},
-        )
-
-        #gym_env = NormalizeReward(gym_env)        
-        if args.use_heuristic: 
-            if args.heuristic_type == 'idle':
-                gym_env = GridOpIdle(gym_env)
-            else:
-                gym_env = GridOpRecoAndRevertBus(gym_env)
-        else: gym_env = gym.wrappers.RecordEpisodeStatistics(gym_env)            
+        else: gym_env.action_space = action_space
     
-        if args.norm_obs: gym_env = NormalizeObservation(gym_env)
+    # Set the observation space
+    gym_env.observation_space = BoxGymObsSpace(gym_env.init_env.observation_space,
+                                        attr_to_keep=obs_attrs,
+                                        #divide={"gen_p": gym_env.init_env.gen_pmax,
+                                        #        "actual_dispatch": gym_env.init_env.gen_pmax},
+    )
 
-        return gym_env
-    
-    # Return the environment object with custom serialization methods
-    return thunk
+    # Use (or not) the CMDP versions of the tasks
+    if args.constraints_type == 1:
+        gym_env = ConstrainedFailureGridOp(gym_env)
+    elif args.constraints_type == 2:
+        gym_env = ConstrainedOverloadGridOp(gym_env)
+
+    if args.use_heuristic: 
+        if args.heuristic_type == 'idle':
+            gym_env = GridOpIdle(gym_env, eval_env=eval_env)
+        else:
+            gym_env = GridOpRecoAndRevertBus(gym_env, eval_env=eval_env)
+    else: gym_env = gym.wrappers.RecordEpisodeStatistics(gym_env)            
+
+    if args.norm_obs: gym_env = NormalizeObservation(gym_env)
+
+    return gym_env, g2op_env

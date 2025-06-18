@@ -33,7 +33,7 @@ def get_alg_args() -> Namespace:
     parser.add_argument('--tg-critic-freq', type=int, default=1, help='Update frequency for target networks')
 
     parser.add_argument("--buffer-size", type=int, default=1000000, help="Replay memory buffer size")
-    parser.add_argument("--batch-size", type=int, default=256, help="Batch size of sample from the replay memory")
+    parser.add_argument("--batch-size", type=int, default=128, help="Batch size of sample from the replay memory")
 
     return parser.parse_known_args()[0]
 

@@ -13,6 +13,26 @@ class GridOp(gym.Wrapper, ABC):
         init_env (GymEnv): The initial environment to wrap.
         ep_reward (float): Cumulative reward for the current episode.
     """
+    def __init__(self, gym_env, eval_env: bool = False):
+        """
+        Initialize the GridOp class.
+
+        Args:
+            gym_env (gym.Env): The environment to wrap.
+            custom_param (optional): Any custom parameter for the GridOp wrapper.
+        """
+        super().__init__(gym_env)  # Initialize the gym.Wrapper part
+        self.eval_env = eval_env
+        self.n_rewards = 1
+
+    def set_n_rewards(self, n_rewards: int):
+        """
+        Sets the number of rewards to track for the evaluation environment.
+
+        Args:
+            n_rewards (int): The number of rewards to set.
+        """
+        self.n_rewards = n_rewards
 
     @property
     def _risk_overflow(self) -> bool:
@@ -37,13 +57,15 @@ class GridOp(gym.Wrapper, ABC):
             if the episode is done, and additional info.
         """
         use_heuristic = True
-        
+        done, info = False, {}
         while use_heuristic:
             g2o_actions = self._get_heuristic_actions()
             if not g2o_actions: break
             for g2o_act in g2o_actions:
                 _, reward, done, info = self.init_env.step(g2o_act)
                 self.ep_reward += reward    # Cumulate episode reward over heuristic steps
+                if self.eval_env: self.ep_rewards += list(info['rewards'].values())
+
                 if done or self._risk_overflow:   # Resume the agent if in a risky situation
                     use_heuristic = False
                     break
@@ -61,19 +83,21 @@ class GridOp(gym.Wrapper, ABC):
         """
         _, reward, done, info = self.init_env.step(self.action_space.from_gym(gym_action))
         self.ep_reward += reward
-        
+        if self.eval_env: self.ep_rewards += list(info['rewards'].values())
+
         if not done and not self._risk_overflow:
             done, info = self.apply_actions()
-  
-        if done:
-            info['episode'] = {'l': [self.init_env.nb_time_step], 'r': [self.ep_reward]}    # Replace the use of RecordEpisodeStatistics
+
+        if done: info['episode'] = {'l': [self.init_env.nb_time_step], 'r': [self.ep_reward]}    # Replace the use of RecordEpisodeStatistics
+
+        if self.eval_env: info['rewards'] = dict(zip(info['rewards'].keys(), self.ep_rewards))
 
         return (
             self.observation_space.to_gym(self._obs), 
             float(reward), 
             done, 
-            False, 
-            info    # Truncation is always false in g2o envs
+            False,  # Truncation is typically False in g2o envs
+            info    
         )
     
     def reset(self, **kwargs) -> Tuple[np.ndarray, Dict]:
@@ -86,11 +110,13 @@ class GridOp(gym.Wrapper, ABC):
             A tuple containing the initial observation and additional info.
         """
         done = True     # It could happen that an episode ends in the reset step
-        while done:     # Without this it would not get reset and crash on the env.step(...)
+        while done:     # Without this it would not reset and crash on the env.step(...)
             _, info = super().reset(**kwargs)  # Reset the underlying scenario
             self.ep_reward = 0.
-            if not self._risk_overflow:
-                done, info = self.apply_actions()  # None of the episodes can be solved with only "do_nothing" actions
+            self.ep_rewards = np.zeros(self.n_rewards)
+            if not self._risk_overflow: done, info = self.apply_actions()
+
+        if self.eval_env: info['rewards'] = dict(zip(info['rewards'].keys(), self.ep_rewards))
 
         return self.observation_space.to_gym(self._obs), info
 

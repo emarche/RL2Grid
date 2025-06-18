@@ -83,6 +83,29 @@ class PPOCheckpoint(CheckpointSaver):
         self.record['wb_run_name'] = wb_run_name
         self.record['last_rollout'] = last_rollout
 
+class LagrPPOCheckpoint(PPOCheckpoint):
+    def set_record(
+        self, args: Dict[str, Any], actor: nn.Sequential, critic: nn.Sequential, cost_critic: nn.Sequential, global_step: int, actor_optim: optim, critic_optim: optim, cost_critic_optim: optim, cost_threshold, lag_mul, lag_optim: optim, wb_run_name: str, last_rollout: int = 0
+    ) -> None:
+        """Set the record for PPO checkpoints.
+
+        Args:
+            args: Run arguments.
+            actor: Actor network.
+            critic: Critic network.
+            global_step : Current global step.
+            actor_optim: Actor optimizer.
+            critic_optim: Critic optimizer.
+            wb_run_name: Weights & Biases run name.
+            last_rollout: Last rollout step. Defaults to 0.
+        """
+        super().set_record(args, actor, critic, global_step, actor_optim, critic_optim, wb_run_name, last_rollout)
+        self.record['cost_critic'] = cost_critic.state_dict()
+        self.record['cost_critic_optim'] = cost_critic_optim.state_dict()
+        self.record['cost_threshold'] = cost_threshold
+        self.record['lag_mul'] = lag_mul.tolist()
+        self.record['lag_optim'] = lag_optim.state_dict()
+
 class SACCheckpoint(PPOCheckpoint):
     def set_record(
         self, args: Dict[str, Any], alpha: float, actor: nn.Sequential, critic: nn.Sequential, critic2: nn.Sequential, global_step: int, actor_optim: optim, critic_optim: optim, wb_run_name: str, last_step: int = 0

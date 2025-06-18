@@ -181,7 +181,9 @@ class Actor(nn.Module):
         Returns:
             A tensor with deterministic continuous actions for evaluation.
         """
-        return self.get_continuous_action(x)[0]
+        mean, _ = self(x)
+        mean = th.tanh_(mean) * self.action_scale + self.action_bias
+        return mean
     
     def discrete_forward(self, x: th.Tensor) -> th.Tensor:
         """Forward pass for the actor network in case of discrete actions.

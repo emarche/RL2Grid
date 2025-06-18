@@ -2,9 +2,9 @@ from common.imports import *
 from common.utils import str2bool
 
 def get_alg_args() -> Namespace:
-    """Parse command-line arguments for PPO.
+    """Parse command-line arguments for Lagrangian PPO.
 
-    This function sets up and parses arguments for configuring the training and evaluation of a PPO agent.
+    This function sets up and parses arguments for configuring the training and evaluation of a Lagrangian PPO agent.
 
     Returns:
         A namespace containing the parsed arguments.
@@ -12,8 +12,8 @@ def get_alg_args() -> Namespace:
     parser = ap.ArgumentParser()
 
     parser.add_argument("--total-timesteps", type=int, default=25000000, help="Total timesteps for the experiment")
-    parser.add_argument("--n-steps", type=int, default=20000, help="Steps per policy rollout")    # 20k for 1 env
-    parser.add_argument("--eval-freq", type=int, default=10000, help="Total timesteps between deterministic evals")
+    parser.add_argument("--n-steps", type=int, default=2000, help="Steps per policy rollout")    # 20k for 1 env
+    parser.add_argument("--eval-freq", type=int, default=500, help="Total timesteps between deterministic evals")
 
     parser.add_argument('--actor-layers', nargs='+', type=int, default=[256, 256], help='Actor network size')
     parser.add_argument('--critic-layers', nargs='+', type=int, default=[256, 256], help='Critic network size')
@@ -38,7 +38,7 @@ def get_alg_args() -> Namespace:
     parser.add_argument("--vf-coef", type=float, default=0.5, help="Value function coefficient")
 
     parser.add_argument("--cost-threshold", type=float, default=15.0, help="Cost threshold")
-    parser.add_argument("--lag-mul", type=float, default=0.0, help="Initial value for the multiplier")
+    parser.add_argument("--lag-mul", type=float, default=1., help="Initial value for the multiplier")
     parser.add_argument("--lag-lr", type=float, default=0.05, help="Learning rate for the multiplier")
 
     return parser.parse_known_args()[0]

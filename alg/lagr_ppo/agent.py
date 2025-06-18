@@ -8,6 +8,7 @@ class Agent(nn.Module):
 
     Attributes:
         critic (nn.Sequential): Critic network for value estimation.
+        cost_critic (nn.Sequential): Critic network for cost value estimation.
         actor (nn.Sequential): Actor network for action selection.
         logstd (nn.Parameter): Log standard deviation for continuous action spaces.
     """
@@ -23,19 +24,8 @@ class Agent(nn.Module):
         """
         super().__init__()
 
-        # Critic network setup
-        critic_layers = args.critic_layers
-        act_str, act_fn = args.critic_act_fn, th_act_fns[args.critic_act_fn]
-        layers = []
-        layers.extend([
-            Linear(np.prod(envs.single_observation_space.shape), critic_layers[0], act_str), 
-            act_fn
-        ])
-
-        for idx, embed_dim in enumerate(critic_layers[1:], start=1): 
-            layers.extend([Linear(critic_layers[idx-1], embed_dim, act_str), act_fn])
-        layers.append(Linear(critic_layers[-1], 1, 'linear'))
-        self.critic = nn.Sequential(*layers)
+        self.critic = nn.Sequential(*(self.get_layers(envs, args)))
+        self.cost_critic = nn.Sequential(*(self.get_layers(envs, args)))
 
         # Actor network setup
         actor_layers = args.actor_layers
@@ -60,6 +50,21 @@ class Agent(nn.Module):
             self.get_eval_action = self.get_eval_discrete_action
         self.actor = nn.Sequential(*layers)
 
+    def get_layers(self, envs, args):
+        critic_layers = args.critic_layers
+        act_str, act_fn = args.critic_act_fn, th_act_fns[args.critic_act_fn]
+        layers = []
+        layers.extend([
+            Linear(np.prod(envs.single_observation_space.shape), critic_layers[0], act_str), 
+            act_fn
+        ])
+
+        for idx, embed_dim in enumerate(critic_layers[1:], start=1): 
+            layers.extend([Linear(critic_layers[idx-1], embed_dim, act_str), act_fn])
+        layers.append(Linear(critic_layers[-1], 1, 'linear'))
+
+        return layers
+
     def get_value(self, x: th.Tensor) -> th.Tensor:
         """Compute value estimate (critic output) for given observations.
 
@@ -70,6 +75,18 @@ class Agent(nn.Module):
             A tensor containing value estimates.
         """
         return self.critic(x)
+
+
+    def get_cost_value(self, x: th.Tensor) -> th.Tensor:
+        """Compute value estimate (critic output) for given observations.
+
+        Args:
+            x: Input observations.
+
+        Returns:
+            A tensor containing value estimates.
+        """
+        return self.cost_critic(x)
 
     def get_discrete_action(self, x: th.Tensor, action: th.Tensor = None) -> Tuple[th.Tensor, th.Tensor, th.Tensor]:
         """Sample discrete actions and compute log probabilities and entropy.

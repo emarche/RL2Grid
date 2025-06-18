@@ -98,6 +98,7 @@ class SAC:
                 real_next_obs = next_obs.copy()
                 for idx, done in enumerate(np.logical_or(terminations, truncations)):
                     if done: real_next_obs[idx] = infos["final_observation"][idx]
+                
                 replay_buf.add(obs, real_next_obs, actions, rewards, terminations, infos)
 
                 obs = next_obs

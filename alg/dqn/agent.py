@@ -28,9 +28,11 @@ class QNetwork(nn.Module):
         ])
         for idx, embed_dim in enumerate(args.layers[1:], start=1): 
             layers.extend([Linear(args.layers[idx-1], embed_dim, act_str), act_fn])
+        
         layers.append(Linear(args.layers[-1], envs.single_action_space.n, 'linear'))
-        self.qnet = nn.Sequential(*layers)
 
+        self.qnet = nn.Sequential(*layers)
+    
     def forward(self, x: th.Tensor) -> th.Tensor:
         """Forward pass through the Q-Network.
 
@@ -41,7 +43,7 @@ class QNetwork(nn.Module):
             Tensor with Q-values for each action.
         """
         return self.qnet(x)
-    
+
     def get_action(self, x: th.Tensor) -> np.ndarray:
         """Get the action with the highest Q-value.
 
@@ -64,4 +66,6 @@ class QNetwork(nn.Module):
         Returns:
             Numpy array of selected actions for evaluation.
         """
-        return self.get_action(x)
+        q_values = self(x)
+        actions = th.argmax(q_values)
+        return actions
