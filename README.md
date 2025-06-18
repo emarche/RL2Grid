@@ -46,15 +46,15 @@ Available arguments include task difficulty, action type (topology/redispatch), 
 
 ## 🧪 Benchmark Environments
 
-RL2Grid supports **39 distinct tasks** across discrete (topological) and continuous (redispatch/curtailment) settings, including:
+RL2Grid supports **39 distinct tasks** across discrete (topological) and continuous (redispatch/curtailment) settings. The main grid variations include:
 
 | Grid ID          | Action Type         | Contingencies            | Batteries | Constraints | Difficulty Levels |
 |------------------|---------------------|---------------------------|-----------|-------------|-------------------|
-| bus14            | Topology, Redispatch | Maintenance               | No        | Optional    | 0                 |
+| bus14            | Topology, Redispatch | Maintenance               | No        | Optional    | 0-1                 |
 | bus36-MO-v0      | Topology, Redispatch | Maintenance + Opponent    | No        | Optional    | 0–4               |
 | bus118-MOB-v0    | Topology, Redispatch | Maintenance + Opponent + B | Yes       | Optional    | 0–4               |
 
-Full environment specs and task variants are listed in the `envs/` directory.
+Full environment specs and task variants are detailed in the paper.
 
 ---
 
