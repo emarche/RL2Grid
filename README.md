@@ -62,8 +62,8 @@ Full environment specs and task variants are detailed in the paper.
 
 To bridge human expertise with RL training, RL2Grid embeds **two human-informed heuristics**:
 
-- `idle`: suppresses agent actions during safe periods
-- `recovery`: gradually restores topology toward safe defaults when the grid is stabilized
+- `idle`: suppresses agent actions during normal grid operations.
+- `recovery`: gradually restores topology toward the original configuration when the grid operates under normal condition.
 
 Heuristic guidance can be toggled via command-line arguments (see `env/config.py`).
 
@@ -94,7 +94,7 @@ Performance is measured via normalized **grid survival rate**, overload penaltie
 
 ## 📚 Documentation
 
-- [📄 Paper](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=9V1_SGkAAAAJ&sortby=pubdate&citation_for_view=9V1_SGkAAAAJ:4DMP91E08xMC)  
+- [📄 Paper](https://arxiv.org/pdf/2503.23101)  
 - [🧠 Grid2Op documentation](https://grid2op.readthedocs.io/)  
 - [📊 ChroniX2Grid time-series generator](https://github.com/BDonnot/ChroniX2Grid)  
 
