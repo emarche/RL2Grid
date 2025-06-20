@@ -52,7 +52,7 @@ RL2Grid supports **39 distinct tasks** across discrete (topological) and continu
 |------------------|---------------------|---------------------------|-----------|-------------|-------------------|
 | bus14            | Topology, Redispatch | Maintenance               | No        | Optional    | 0-1                 |
 | bus36-MO-v0      | Topology, Redispatch | Maintenance + Opponent    | No        | Optional    | 0–4               |
-| bus118-MOB-v0    | Topology, Redispatch | Maintenance + Opponent + B | Yes       | Optional    | 0–4               |
+| bus118-MOB-v0    | Topology, Redispatch | Maintenance + Opponent + Battery | Yes       | Optional    | 0–4               |
 
 Full environment specs and task variants are detailed in the paper.
 
