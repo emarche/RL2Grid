@@ -37,7 +37,7 @@ pip install .
 To run training on a predefined task (remember to set up the correct entity and project for wandb in the `main.py` script):
 
 ```bash
-python main.py --task bus14 --algo ppo --track --wandb_project rl2grid-benchmarks
+python main.py --env-id bus14 --action-type topology --alg PPO
 ```
 
 Available arguments include task difficulty, action type (topology/redispatch), reward weights, constraint types, and more. Check `main.py` and `alg/<algorithm>/config.py` for the full configuration space.
