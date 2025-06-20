@@ -108,6 +108,8 @@ We are committed to responsible research. Experiments were run with carbon offse
 
 ## 📬 Citation
 
+This project was developed in collaboration with RTE France, 50Hertz, National Grid ESO, MIT, Georgia Tech, University of Edinburgh.
+
 If you use RL2Grid, please cite:
 
 ```bibtex
@@ -121,14 +123,3 @@ If you use RL2Grid, please cite:
       url={https://arxiv.org/abs/2503.23101}, 
 }
 ```
-
----
-
-## 🤝 Acknowledgments
-
-This project was developed in collaboration with:
-
-- RTE France  
-- 50Hertz  
-- National Grid ESO  
-- MIT, Georgia Tech, University of Edinburgh  
