@@ -7,7 +7,7 @@
 - ⚠️ **Safe RL tasks** via constrained MDPs, with load shedding and thermal overload constraints  
 - 🧪 Extensive **baselines** including DQN, PPO, SAC, TD3, and Lagrangian PPO  
 - 📊 Integration with [Weights & Biases (wandb)](https://wandb.ai/home) for experiment tracking  
-- 🧠 Designed to foster **algorithmic innovation and safe control** in power grids
+- 🧠 Designed to provide a framework for **algorithmic innovation and safe control** in power grids
 
 ---
 
@@ -62,8 +62,8 @@ Full environment specs and task variants are detailed in the paper.
 
 To bridge human expertise with RL training, RL2Grid embeds **two human-informed heuristics**:
 
-- `idle`: suppresses agent actions during normal grid operations.
-- `recovery`: gradually restores topology toward the original configuration when the grid operates under normal condition.
+- `idle`: suppresses agent actions during normal grid operations
+- `recovery`: gradually restores topology toward the original configuration when the grid operates under normal condition
 
 Heuristic guidance can be toggled via command-line arguments (see `env/config.py`).
 
