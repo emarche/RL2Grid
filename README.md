@@ -34,6 +34,8 @@ pip install .
 
 ## 🚀 Quick Start
 
+Before running an experiment, make sure to unzip the action spaces `env/action_spaces.zip`!
+
 To run training on a predefined task (remember to set up the correct entity and project for wandb in the `main.py` script):
 
 ```bash
