@@ -125,3 +125,9 @@ If you use RL2Grid, please cite:
       url={https://arxiv.org/abs/2503.23101}, 
 }
 ```
+
+---
+
+## License
+
+RL2Grid is licensed under the MIT License. For more details, please refer to the `LICENSE` file in this repository.
