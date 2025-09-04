@@ -14,7 +14,7 @@ setup(
         'Programming Language :: Python :: 3.12.2',
     ],
     install_requires=[
-        'grid2op',
+        'grid2op==1.11.0',
         'lightsim2grid==0.9',
         'gymnasium==0.29.1',
         'stable_baselines3',
