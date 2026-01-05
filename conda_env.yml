@@ -5,7 +5,7 @@ channels:
   - pytorch
 dependencies:
   - python=3.12.2
-  - pytorch=2.2.0
+  - pytorch==2.2.0 # 2.2.0 - 2.9
   - cpuonly 
   - tensorboard
   - wandb

@@ -197,9 +197,9 @@ class LagrPPO:
 
                         # Cost component
                         surr_cost_advantage = (mb_cost_advantages * ratio).mean()
-                        multiplier = softplus(lag_mul)
+                        multiplier = softplus(lag_mul).detach()
 
-                        pg_loss = (pg_loss - multiplier * surr_cost_advantage) / (1 + multiplier)
+                        pg_loss = (pg_loss + multiplier * surr_cost_advantage) / (1 + multiplier)
 
                         entropy_loss = entropy.mean()
                         pg_loss = pg_loss - args.entropy_coef * entropy_loss

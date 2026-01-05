@@ -128,6 +128,11 @@ If you use RL2Grid, please cite:
 
 ---
 
+## Notes
+RL2Grid has been tested on Linux systems. During the development of the distributed action mapper, a required Grid2Op modification broke compatibility with macOS, and Windows has not been tested.
+
+---
+
 ## License
 
 RL2Grid is licensed under the MIT License. For more details, please refer to the `LICENSE` file in this repository.
