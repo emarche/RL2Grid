@@ -129,7 +129,7 @@ If you use RL2Grid, please cite:
 ---
 
 ## Notes
-RL2Grid has been tested on Linux systems. During the development of the distributed action mapper, a required Grid2Op modification broke compatibility with macOS, and Windows has not been tested.
+RL2Grid has been tested on Linux systems. During the development of the distributed action mapper, a required Grid2Op modification broke compatibility with macOS, and Windows systems have not been tested.
 
 ---
 
