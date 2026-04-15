@@ -135,7 +135,6 @@ class RedispRewardv1(RedispReward):
 
         return reward
 
-
 class N1ContingencyRewardv1(N1ContingencyReward):         
     def initialize(self, env: "grid2op.Environment.Environment"):
         super().initialize(env)        

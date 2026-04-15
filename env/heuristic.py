@@ -13,7 +13,7 @@ class GridOp(gym.Wrapper, ABC):
         init_env (GymEnv): The initial environment to wrap.
         ep_reward (float): Cumulative reward for the current episode.
     """
-    def __init__(self, gym_env, eval_env: bool = False):
+    def __init__(self, gym_env, gamma, eval_env: bool = False):
         """
         Initialize the GridOp class.
 
@@ -23,6 +23,7 @@ class GridOp(gym.Wrapper, ABC):
         """
         super().__init__(gym_env)  # Initialize the gym.Wrapper part
         self.eval_env = eval_env
+        self.gamma = gamma
         self.n_rewards = 1
 
     def set_n_rewards(self, n_rewards: int):
@@ -57,13 +58,16 @@ class GridOp(gym.Wrapper, ABC):
             if the episode is done, and additional info.
         """
         use_heuristic = True
+        heuristic_step = 1
         done, info = False, {}
         while use_heuristic:
             g2o_actions = self._get_heuristic_actions()
             if not g2o_actions: break
             for g2o_act in g2o_actions:
                 _, reward, done, info = self.init_env.step(g2o_act)
-                self.ep_reward += reward    # Cumulate episode reward over heuristic steps
+                self.ep_reward += self.gamma**heuristic_step * reward    # Cumulate discounted episode reward over heuristic steps
+                heuristic_step += 1
+                
                 if self.eval_env: self.ep_rewards += list(info['rewards'].values())
 
                 if done or self._risk_overflow:   # Resume the agent if in a risky situation

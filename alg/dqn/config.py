@@ -19,7 +19,6 @@ def get_alg_args() -> Namespace:
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate for the Q-network")
     parser.add_argument('--train-freq', type=int, default=100, help='Training frequency in timesteps')
 
-    parser.add_argument("--gamma", type=float, default=.9, help="Discount factor")
     parser.add_argument("--tau", type=float, default=1.0, help="Target network update rate")
     parser.add_argument('--tg-qnet-freq', type=int, default=500, help='Timesteps required to update the target network')
     parser.add_argument("--eps-start", type=float, default=1.0, help="Starting epsilon for exploration")

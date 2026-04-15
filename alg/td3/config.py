@@ -24,7 +24,6 @@ def get_alg_args() -> Namespace:
     parser.add_argument('--tg-freq', type=int, default=1000, help='Timesteps required to update the target networks')
     parser.add_argument('--train-freq', type=int, default=100, help='Training frequency in timesteps')
 
-    parser.add_argument("--gamma", type=float, default=.99, help="Discount factor")
     parser.add_argument("--tau", type=float, default=0.05, help="Target smoothing coefficient")
     parser.add_argument("--policy-noise", type=float, default=0.2, help="Scale for the policy noise")
     parser.add_argument("--exploration-noise", type=float, default=0.1, help="Scale for the exploration noise")

@@ -23,7 +23,6 @@ def get_alg_args() -> Namespace:
     parser.add_argument("--critic-lr", type=float, default=3e-4, help="Learning rate for the critic")
     parser.add_argument("--anneal-lr", type=str2bool, default=True, help="Toggles learning rate annealing")
 
-    parser.add_argument("--gamma", type=float, default=.9, help="Discount factor")
     parser.add_argument("--gae-lambda", type=float, default=.95, help="Lambda for the genralized advantage estimation")
 
     parser.add_argument("--update-epochs", type=int, default=80, help="Number of update epochs")

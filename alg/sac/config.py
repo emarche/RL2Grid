@@ -23,7 +23,6 @@ def get_alg_args() -> Namespace:
     parser.add_argument("--critic-lr", type=float, default=2.5e-4, help="Learning rate for the critic")
     parser.add_argument('--train-freq', type=int, default=20, help='Training frequency in timesteps')
 
-    parser.add_argument("--gamma", type=float, default=.9, help="Discount factor")
     parser.add_argument("--tau", type=float, default=0.05, help="Target smoothing coefficient")
     parser.add_argument("--noise-clip", type=float, default=0.2, help="Noise clip for target policy smoothing regularization")
     parser.add_argument("--alpha", type=float, default=0.1, help="Entropy regularization coefficient")

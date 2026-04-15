@@ -17,6 +17,8 @@ def get_env_args() -> Namespace:
     parser.add_argument("--difficulty", type=int, default=0, help="Higher difficulty means bigger action spaces")
     parser.add_argument("--n1-reward", type=str2bool, default=False, help="Toggles N1 contintency analysis as an additional reward")
 
+    parser.add_argument("--gamma", type=float, default=.9, help="Discount factor")
+
     # Scenarios
     parser.add_argument("--env-config-path", type=str, default="scenario.json", help="Path to environment configuration file")
 

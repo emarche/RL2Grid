@@ -131,8 +131,9 @@ class Agent(nn.Module):
         Returns:
             A tensor with deterministic discrete actions for evaluation.
         """
-        return self.get_discrete_action(x)[0]
-      
+        action_mu = self.actor(x)
+        return th.argmax(action_mu)
+          
     def get_eval_continuous_action(self, x: th.Tensor) -> th.Tensor:
         """Evaluate continuous actions without exploration.
 
