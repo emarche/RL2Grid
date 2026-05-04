@@ -84,8 +84,8 @@ if __name__ == "__main__":
     parser = ap.ArgumentParser()
 
     # Cluster
-    parser.add_argument("--time-limit", type=float, default=1300, help="Time limit for the action ranking")
-    parser.add_argument("--checkpoint", type=str2bool, default=True, help="Toggles checkpoint.")
+    parser.add_argument("--time-limit", type=float, default=2790, help="Time limit")
+    parser.add_argument("--checkpoint", type=str2bool, default=False, help="Toggles checkpoint.")
     parser.add_argument("--resume-run-name", type=str, default='', help="Run name to resume")
 
     # Reproducibility
@@ -103,6 +103,6 @@ if __name__ == "__main__":
     # Torch
     parser.add_argument("--th-deterministic", type=str2bool, default=True, help="Enable deterministic in Torch.")
     parser.add_argument("--cuda", type=str2bool, default=False, help="Enable CUDA by default.")
-    parser.add_argument("--n-threads", type=int, default=4, help="Max number of torch threads.")
+    parser.add_argument("--n-threads", type=int, default=12, help="Max number of torch threads.")
 
     main(parser.parse_known_args()[0])

@@ -11,21 +11,21 @@ def get_alg_args() -> Namespace:
     """
     parser = ap.ArgumentParser()
 
-    parser.add_argument("--total-timesteps", type=int, default=25000000, help="Total timesteps for the experiment")
-    parser.add_argument("--n-steps", type=int, default=20000, help="Steps per policy rollout")    # 20k for 1 env
+    parser.add_argument("--total-timesteps", type=int, default=80000000, help="Total timesteps for the experiment")
+    parser.add_argument("--n-steps", type=int, default=400, help="Steps per policy rollout")    # 20k for 1 env
     parser.add_argument("--eval-freq", type=int, default=10000, help="Total timesteps between deterministic evals")
 
-    parser.add_argument('--actor-layers', nargs='+', type=int, default=[256, 256], help='Actor network size')
-    parser.add_argument('--critic-layers', nargs='+', type=int, default=[256, 256], help='Critic network size')
+    parser.add_argument('--actor-layers', nargs='+', type=int, default=[256, 128, 64], help='Actor network size')
+    parser.add_argument('--critic-layers', nargs='+', type=int, default=[512, 256, 128], help='Critic network size')
     parser.add_argument('--actor-act-fn', type=str, default='tanh', help='Actor activation function')
     parser.add_argument('--critic-act-fn', type=str, default='tanh', help='Critic activation function')
-    parser.add_argument("--actor-lr", type=float, default=3e-4, help="Learning rate for the actor")
-    parser.add_argument("--critic-lr", type=float, default=3e-4, help="Learning rate for the critic")
+    parser.add_argument("--actor-lr", type=float, default=0.00003, help="Learning rate for the actor")
+    parser.add_argument("--critic-lr", type=float, default=0.0003, help="Learning rate for the critic")
     parser.add_argument("--anneal-lr", type=str2bool, default=True, help="Toggles learning rate annealing")
 
     parser.add_argument("--gae-lambda", type=float, default=.95, help="Lambda for the genralized advantage estimation")
 
-    parser.add_argument("--update-epochs", type=int, default=80, help="Number of update epochs")
+    parser.add_argument("--update-epochs", type=int, default=40, help="Number of update epochs")
     parser.add_argument("--n-minibatches", type=int, default=4, help="Number of minibatches")
     parser.add_argument("--max-grad-norm", type=float, default=10, help="Maximum norm for gradient clipping")
     parser.add_argument("--target-kl", type=float, default=None, help="Target KL divergence threshold")

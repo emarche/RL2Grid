@@ -12,7 +12,7 @@ def get_env_args() -> Namespace:
 
     # Settings
     parser.add_argument("--env-id", type=str, default="bus14", help="ID of the grid2op environment")
-    parser.add_argument("--n-envs", type=int, default=1, help="Number of parallel envs to run")
+    parser.add_argument("--n-envs", type=int, default=50, help="Number of parallel envs to run")
     parser.add_argument("--action-type", type=str, default="topology", choices=["topology", "redispatch"], help="Type of environment: topology (discrete) or redispatch (continuous)")
     parser.add_argument("--difficulty", type=int, default=0, help="Higher difficulty means bigger action spaces")
     parser.add_argument("--n1-reward", type=str2bool, default=False, help="Toggles N1 contintency analysis as an additional reward")
