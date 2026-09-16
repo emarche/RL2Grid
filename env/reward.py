@@ -185,6 +185,7 @@ class N1ContingencyRewardv1(N1ContingencyReward):
         res = res.sum()  # count total of n-1 unsafe 
         if self._normalize: res /= len(self._l_ids)
         return -res     # emarche: we want penalize the agent based on N1 contingencies
+
     
     def close(self):
         if self._backend is not None:

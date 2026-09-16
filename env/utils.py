@@ -144,7 +144,8 @@ def auxiliary_make_env(args: Dict[str, Any], resume_run: bool = False, idx: int 
         print("Class generated offline for AsyncVecEnv execution")
         quit()
     
-    gym_env = GymEnv(g2op_env, shuffle_chronics=True)  # Wrap the grid2op environment in a GymEnv
+    # Create the Gymnasium wrapper with with_forecast=True; otherwise g2o deliberately drops the observation forecast env, and obs.get_simulator() fails.
+    gym_env = GymEnv(g2op_env, shuffle_chronics=True, with_forecast=False)  # Wrap the grid2op environment in a GymEnv
     gym_env.action_space.close()
     
     # Making sure we can act on 1 sub / line status at the same step

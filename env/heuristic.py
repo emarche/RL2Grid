@@ -3,6 +3,7 @@ from common.imports import *
 
 RHO_SAFETY_THRESHOLD = 0.95
 
+
 class GridOp(gym.Wrapper, ABC):
     """Abstract base class for heuristic operation wrappers.
 
