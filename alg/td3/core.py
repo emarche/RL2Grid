@@ -67,7 +67,7 @@ class TD3:
         assert args.eval_freq % args.n_envs == 0, \
             f"Invalid eval frequency: {args.eval_freq}. Must be multiple of n_envs {args.n_envs}"
         logger = Logger(run_name, args) if args.track else None
-        evaluator = Evaluator(args, logger, device)
+        evaluator = Evaluator(args, logger, device, envs)
 
         init_step = 1 if not ckpt.resumed else ckpt.loaded_run['last_step']
         global_step = 0 if not ckpt.resumed else ckpt.loaded_run['global_step']
@@ -75,7 +75,7 @@ class TD3:
         obs, _ = envs.reset(seed=args.seed)
 
         try:
-            for step in range(init_step, args.total_timesteps):
+            for step in range(init_step, int(args.total_timesteps // args.n_envs)):
                 global_step += args.n_envs
 
                 if global_step < args.learning_starts:

@@ -55,8 +55,9 @@ class SAC:
 
         # Automatic entropy tuning
         if args.autotune:
-            tg_entropy = -th.prod(th.tensor(envs.single_action_space.shape).to(device)).item()
-            log_alpha = th.zeros(1, requires_grad=True, device=device)
+            if continuous_actions: tg_entropy = -th.prod(th.tensor(envs.single_action_space.shape).to(device)).item()
+            else: tg_entropy = 0.89 * np.log(envs.single_action_space.n)   # fraction of the maximum entropy, as in discrete SAC
+            log_alpha = th.tensor([float(np.log(ckpt.loaded_run['alpha'])) if ckpt.resumed else 0.], requires_grad=True, device=device)
             alpha = log_alpha.exp().item()
             alpha_optim = optim.Adam([log_alpha], lr=args.critic_lr)
         else:
@@ -75,7 +76,7 @@ class SAC:
         assert args.eval_freq % args.n_envs == 0, \
             f"Invalid eval frequency: {args.eval_freq}. Must be multiple of n_envs {args.n_envs}"
         logger = Logger(run_name, args) if args.track else None
-        evaluator = Evaluator(args, logger, device)
+        evaluator = Evaluator(args, logger, device, envs)
 
         init_step = 1 if not ckpt.resumed else ckpt.loaded_run['last_step']
         global_step = 0 if not ckpt.resumed else ckpt.loaded_run['global_step']

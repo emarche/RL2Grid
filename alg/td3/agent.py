@@ -25,7 +25,7 @@ class QNetwork(nn.Module):
             act_str
         )
         
-        self.fc_h = []
+        self.fc_h = nn.ModuleList()
         for idx, embed_dim in enumerate(critic_layers[1:], start=1): 
             self.fc_h.append(Linear(critic_layers[idx-1], embed_dim, act_str))
 
@@ -66,11 +66,11 @@ class Actor(nn.Module):
             act_str
         )
        
-        self.fc_h = []
+        self.fc_h = nn.ModuleList()
         for idx, embed_dim in enumerate(actor_layers[1:], start=1): 
             self.fc_h.append(Linear(actor_layers[idx-1], embed_dim, act_str))
 
-        self.fc_mu = Linear(actor_layers[idx], np.prod(envs.single_action_space.shape), 'tanh')
+        self.fc_mu = Linear(actor_layers[-1], np.prod(envs.single_action_space.shape), 'tanh')
         # action rescaling
         self.register_buffer(
             "action_scale", th.tensor((envs.single_action_space.high - envs.single_action_space.low) / 2.0, dtype=th.float32)

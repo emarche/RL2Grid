@@ -59,6 +59,7 @@ class Agent(nn.Module):
             self.get_action = self.get_discrete_action
             self.get_eval_action = self.get_eval_discrete_action
         self.actor = nn.Sequential(*layers)
+        if continuous_actions: self.actor.register_parameter('logstd', self.logstd)  # optimized and checkpointed with the actor
 
     def get_value(self, x: th.Tensor) -> th.Tensor:
         """Compute value estimate (critic output) for given observations.

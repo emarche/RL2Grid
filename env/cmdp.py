@@ -12,7 +12,8 @@ class ConstrainedFailureGridOp(gym.Wrapper):
         """
         next_obs, reward, terminated, truncated, info = super().step(gym_action)
         
-        if np.logical_or(terminated, truncated): info['cost'] = 1
+        failed = self.init_env.nb_time_step < self.init_env.chronics_handler.max_episode_duration()
+        if np.logical_or(terminated, truncated) and failed: info['cost'] = 1
         else: info['cost'] = 0
         
         return (
@@ -35,7 +36,11 @@ class ConstrainedOverloadGridOp(gym.Wrapper):
         """
         next_obs, reward, terminated, truncated, info = super().step(gym_action)
 
-        n_disconnections = sum(~self.init_env.current_obs.line_status)
+        obs = self.init_env.current_obs
+        forced = obs.time_next_maintenance == 0     # lines currently under maintenance
+        attacked = info.get('opponent_attack_line')
+        if attacked is not None: forced = forced | attacked
+        n_disconnections = int(np.sum(~obs.line_status & ~forced))
         n_overloads = 0     # If it's game over and the grid is disconnected (i..e, n_disconnections = n_lines), then we cannot get the thermal limit and we don't have to compute n_overloads
 
         if not np.logical_or(terminated, truncated):

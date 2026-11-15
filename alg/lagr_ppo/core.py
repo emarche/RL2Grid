@@ -47,7 +47,6 @@ class LagrPPO:
             agent.cost_critic.load_state_dict(ckpt.loaded_run['cost_critic'])
 
         actor_params = list(agent.actor.parameters())
-        if continuous_actions: actor_params + [agent.logstd]
         actor_optim = optim.Adam(actor_params, lr=args.actor_lr, eps=1e-5)
         critic_optim = optim.Adam(agent.critic.parameters(), lr=args.critic_lr, eps=1e-5)
         cost_critic_optim = optim.Adam(agent.cost_critic.parameters(), lr=args.critic_lr, eps=1e-5)
@@ -61,7 +60,7 @@ class LagrPPO:
             actor_optim.load_state_dict(ckpt.loaded_run['actor_optim'])
             critic_optim.load_state_dict(ckpt.loaded_run['critic_optim'])
             cost_critic_optim.load_state_dict(ckpt.loaded_run['cost_critic_optim'])
-            lag_mul = th.tensor(ckpt.loaded_run['lag_mul'], requires_grad=True, device=device)
+            lag_mul.data = th.tensor(ckpt.loaded_run['lag_mul'], device=device)
             lag_optim.load_state_dict(ckpt.loaded_run['lag_optim'])
             cost_threshold = ckpt.loaded_run['cost_threshold']
 
@@ -79,7 +78,7 @@ class LagrPPO:
         assert args.eval_freq % args.n_envs == 0, \
             f"Invalid eval frequency: {args.eval_freq}. Must be multiple of n_envs {args.n_envs}"
         logger = ConstrainedLogger(run_name, args) if args.track else None
-        evaluator = CMDPEvaluator(args, logger, device)
+        evaluator = CMDPEvaluator(args, logger, device, envs)
 
         global_step = 0 if not ckpt.resumed else ckpt.loaded_run['global_step']
         start_time = start_time
@@ -107,7 +106,7 @@ class LagrPPO:
                     actions[step] = action
                     logprobs[step] = logprob
 
-                    next_obs, reward, next_terminations, next_truncations, infos = envs.step(action.cpu().numpy())
+                    next_obs, reward, next_terminations, next_truncations, infos = envs.step(np.clip(action.cpu().numpy(), envs.single_action_space.low, envs.single_action_space.high) if continuous_actions else action.cpu().numpy())
 
                     rewards[step] = th.tensor(reward).to(device).view(-1)
                     dones[step] = th.tensor(np.logical_or(next_terminations, next_truncations)).to(device)
@@ -174,7 +173,7 @@ class LagrPPO:
                     for start in range(0, batch_size, minibatch_size):
                         end = start + minibatch_size
                         mb_inds = b_inds[start:end]
-                        _, newlogprob, entropy = agent.get_action(b_obs[mb_inds], b_actions.long()[mb_inds])
+                        _, newlogprob, entropy = agent.get_action(b_obs[mb_inds], b_actions[mb_inds] if continuous_actions else b_actions.long()[mb_inds])
                         logratio = newlogprob - b_logprobs[mb_inds]
                         ratio = logratio.exp()
 

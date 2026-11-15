@@ -68,7 +68,7 @@ class DQN:
         assert args.eval_freq % args.n_envs == 0, \
             f"Invalid eval frequency: {args.eval_freq}. Must be multiple of n_envs {args.n_envs}"
         logger = Logger(run_name, args) if args.track else None
-        evaluator = Evaluator(args, logger, device)
+        evaluator = Evaluator(args, logger, device, envs)
 
         init_step = 1 if not ckpt.resumed else ckpt.loaded_run['last_step']
         global_step = 0 if not ckpt.resumed else ckpt.loaded_run['global_step']
