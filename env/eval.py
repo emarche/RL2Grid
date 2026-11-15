@@ -1,4 +1,5 @@
 from collections import deque
+from copy import deepcopy
 
 from common.imports import *
 from common.logger import Logger
@@ -14,7 +15,7 @@ class Evaluator:
         device (th.device): Device to run the model on (e.g., 'cpu' or 'cuda').
     """
 
-    def __init__(self, args: Dict[str, Any], logger: Logger, device: th.device) -> None:
+    def __init__(self, args: Dict[str, Any], logger: Logger, device: th.device, envs: gym.Env = None) -> None:
         """Initialize the Evaluator with the given arguments, logger, and device.
 
         Args:
@@ -35,8 +36,14 @@ class Evaluator:
         if args.action_type == 'topology': self.reward_tags += ['Topology Reward']      
         if args.n1_reward: self.reward_tags += ['N1 Reward']
         self.use_heuristic = args.use_heuristic
+        self.train_envs = envs if args.norm_obs else None   # source of the observation statistics
         if self.use_heuristic: self.env.set_n_rewards(len(self.reward_tags))
             
+    def _reset(self) -> Tuple[np.ndarray, Dict]:
+        """Reset the eval env with the training observation statistics."""
+        if self.train_envs is not None: self.env.obs_rms = deepcopy(self.train_envs.get_attr('obs_rms')[0])
+        return self.env.reset()
+
     def evaluate(self, glob_step: int, model: object, eval_ep: int = 3) -> None:
         """Evaluate the model over a specified number of episodes.
 
@@ -50,22 +57,23 @@ class Evaluator:
         ep_returns: Deque[float] = deque(maxlen=eval_ep)  # Queue to store returns of episodes
         ep_rewards = np.zeros(len(self.reward_tags))
 
-        obs, info = self.env.reset()
+        obs, info = self._reset()
 
         if self.use_heuristic: ep_rewards += list(info['rewards'].values())
 
         while len(ep_survivals) < eval_ep:
-            action = model.get_eval_action(th.tensor(obs, dtype=th.float).to(self.device)).detach().numpy()
+            action = model.get_eval_action(th.tensor(obs, dtype=th.float).to(self.device)).detach().cpu().numpy()
             next_obs, _, _, _, info = self.env.step(action)
 
             obs = next_obs
 
-            ep_rewards += list(info['rewards'].values())
+            if self.use_heuristic: ep_rewards = np.array(list(info['rewards'].values()), dtype=float)  # already cumulative
+            else: ep_rewards += list(info['rewards'].values())
             # Record rewards for plotting purposes
             if "episode" in info:   # Denote end of an episode
                 ep_survivals.append(self.env.init_env.nb_time_step/self.max_steps)
                 ep_returns.append(ep_rewards)
-                obs, _ = self.env.reset()
+                obs, _ = self._reset()
                 ep_rewards = np.zeros(len(self.reward_tags))
 
         # Calculate average survival rate and return over the evaluated episodes
@@ -87,8 +95,8 @@ class CMDPEvaluator(Evaluator):
         device (th.device): Device to run the model on (e.g., 'cpu' or 'cuda').
     """
 
-    def __init__(self, args: Dict[str, Any], logger: Logger, device: th.device) -> None:
-        super().__init__(args, logger, device)
+    def __init__(self, args: Dict[str, Any], logger: Logger, device: th.device, envs: gym.Env = None) -> None:
+        super().__init__(args, logger, device, envs)
 
     def evaluate(self, glob_step: int, model: object, eval_ep: int = 3) -> None:
         """Evaluate the model over a specified number of episodes.
@@ -105,16 +113,17 @@ class CMDPEvaluator(Evaluator):
         ep_rewards = np.zeros(len(self.reward_tags))
         ep_costs = 0
 
-        obs, info = self.env.reset()
+        obs, info = self._reset()
 
         if self.use_heuristic: ep_rewards += list(info['rewards'].values())
 
         while len(ep_survivals) < eval_ep:
-            action = model.get_eval_action(th.tensor(obs, dtype=th.float).to(self.device)).detach().numpy()
+            action = model.get_eval_action(th.tensor(obs, dtype=th.float).to(self.device)).detach().cpu().numpy()
             next_obs, _, _, _, info = self.env.step(action)
 
             obs = next_obs
-            ep_rewards += list(info['rewards'].values())
+            if self.use_heuristic: ep_rewards = np.array(list(info['rewards'].values()), dtype=float)  # already cumulative
+            else: ep_rewards += list(info['rewards'].values())
             ep_costs += info['cost']
 
             # Record rewards and cost for plotting purposes
@@ -123,7 +132,7 @@ class CMDPEvaluator(Evaluator):
                 ep_returns.append(ep_rewards)
                 ep_cost_returns.append(ep_costs)
 
-                obs, _ = self.env.reset()
+                obs, _ = self._reset()
                 ep_rewards = np.zeros(len(self.reward_tags))
                 ep_costs = 0
 

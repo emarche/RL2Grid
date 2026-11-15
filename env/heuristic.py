@@ -61,12 +61,14 @@ class GridOp(gym.Wrapper, ABC):
         use_heuristic = True
         heuristic_step = 1
         done, info = False, {}
+        heuristic_reward = 0.
         while use_heuristic:
             g2o_actions = self._get_heuristic_actions()
             if not g2o_actions: break
             for g2o_act in g2o_actions:
                 _, reward, done, info = self.init_env.step(g2o_act)
                 self.ep_reward += self.gamma**heuristic_step * reward    # Cumulate discounted episode reward over heuristic steps
+                heuristic_reward += self.gamma**heuristic_step * reward
                 heuristic_step += 1
                 
                 if self.eval_env: self.ep_rewards += list(info['rewards'].values())
@@ -75,7 +77,7 @@ class GridOp(gym.Wrapper, ABC):
                     use_heuristic = False
                     break
 
-        return done, info
+        return heuristic_reward, done, info
 
     def step(self, gym_action: Union[int, List[float]]) -> Tuple[np.ndarray, float, bool, bool, Dict]:
         """Take a step in the environment using the given gym action, then follow the heuristic.
@@ -91,7 +93,8 @@ class GridOp(gym.Wrapper, ABC):
         if self.eval_env: self.ep_rewards += list(info['rewards'].values())
 
         if not done and not self._risk_overflow:
-            done, info = self.apply_actions()
+            heuristic_reward, done, info = self.apply_actions()
+            reward += heuristic_reward
 
         if done: info['episode'] = {'l': [self.init_env.nb_time_step], 'r': [self.ep_reward]}    # Replace the use of RecordEpisodeStatistics
 
@@ -119,9 +122,10 @@ class GridOp(gym.Wrapper, ABC):
             _, info = super().reset(**kwargs)  # Reset the underlying scenario
             self.ep_reward = 0.
             self.ep_rewards = np.zeros(self.n_rewards)
-            if not self._risk_overflow: done, info = self.apply_actions()
+            done = False
+            if not self._risk_overflow: _, done, info = self.apply_actions()
 
-        if self.eval_env: info['rewards'] = dict(zip(info['rewards'].keys(), self.ep_rewards))
+        if self.eval_env: info['rewards'] = dict(zip(info.get('rewards', range(self.n_rewards)), self.ep_rewards))
 
         return self.observation_space.to_gym(self._obs), info
 
@@ -176,23 +180,12 @@ class GridOpRevertBus(GridOp):
 
         # Get the idx of most changed substation that is out of cooldown
         # Get the subs out of cooldown where there have been some bus changes
-        revertable_subs = bus_changed_info[(self._obs.time_before_cooldown_sub == 0) & (bus_changed_info > 0)]      
+        revertable_subs = np.where((self._obs.time_before_cooldown_sub == 0) & (bus_changed_info > 0))[0]
 
-        if revertable_subs.size > 0:    # if there is a sub to revert           
-            # Get unique values in revertable_subs and their counts
-            unique_subs, counts = np.unique(revertable_subs, return_counts=True)
+        if revertable_subs.size > 0:    # if there is a sub to revert
+            # Most changed substations first
+            bus_changed_idxs = revertable_subs[np.argsort(-bus_changed_info[revertable_subs], kind='stable')]
 
-            # Create a dictionary to map those unique values to their inverted counts (descending) - handles duplicates
-            ordered_sub_values = dict(zip(unique_subs, np.argsort(counts)[::-1]))
-
-            # Find indexes where elements in bus_changed_info match values in revertable_subs
-            bus_changed_idxs = np.where(np.in1d(bus_changed_info, unique_subs))[0]
-
-            # Get the corresponding order for each matching element using the dictionary
-            bus_changed_orders = [ordered_sub_values[sub] for sub in bus_changed_info[bus_changed_idxs]]
-            # Sort and rank indexes based on the orders (descending order)
-            bus_changed_idxs = bus_changed_idxs[np.argsort(bus_changed_orders)]
-            
             return [self.init_env.action_space(
                 {"set_bus": 
                  {"substations_id": [(revert_sub_idx, np.ones(self._obs.sub_info[revert_sub_idx], dtype=int))]}})

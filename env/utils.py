@@ -209,18 +209,18 @@ def auxiliary_make_env(args: Dict[str, Any], resume_run: bool = False, idx: int 
                                         #        "actual_dispatch": gym_env.init_env.gen_pmax},
     )
 
-    # Use (or not) the CMDP versions of the tasks
-    if args.constraints_type == 1:
-        gym_env = ConstrainedFailureGridOp(gym_env)
-    elif args.constraints_type == 2:
-        gym_env = ConstrainedOverloadGridOp(gym_env)
-
     if args.use_heuristic: 
         if args.heuristic_type == 'idle':
             gym_env = GridOpIdle(gym_env, args.gamma, eval_env=eval_env)
         else:
             gym_env = GridOpRecoAndRevertBus(gym_env, args.gamma, eval_env=eval_env)
     else: gym_env = gym.wrappers.RecordEpisodeStatistics(gym_env)            
+
+    # Use (or not) the CMDP versions of the tasks
+    if args.constraints_type == 1:
+        gym_env = ConstrainedFailureGridOp(gym_env)
+    elif args.constraints_type == 2:
+        gym_env = ConstrainedOverloadGridOp(gym_env)
 
     if args.norm_obs: gym_env = NormalizeObservation(gym_env)
 

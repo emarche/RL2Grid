@@ -34,7 +34,7 @@ class SoftQNetwork(nn.Module):
             act_str
         )
         
-        self.fc_h = []
+        self.fc_h = nn.ModuleList()
         for idx, embed_dim in enumerate(critic_layers[1:], start=1): 
             self.fc_h.append(Linear(critic_layers[idx-1], embed_dim, act_str))
 
@@ -107,14 +107,14 @@ class Actor(nn.Module):
             act_str
         )
 
-        self.fc_h = []
+        self.fc_h = nn.ModuleList()
         for idx, embed_dim in enumerate(actor_layers[1:], start=1): 
             self.fc_h.append(Linear(actor_layers[idx-1], embed_dim, act_str))
 
         # Output layers and action handling based on action type
         if continuous_actions:
-            self.fc_mu = Linear(actor_layers[idx], np.prod(envs.single_action_space.shape), 'linear')
-            self.fc_logstd = Linear(actor_layers[idx], np.prod(envs.single_action_space.shape), 'linear')
+            self.fc_mu = Linear(actor_layers[-1], np.prod(envs.single_action_space.shape), 'linear')
+            self.fc_logstd = Linear(actor_layers[-1], np.prod(envs.single_action_space.shape), 'linear')
 
             # action rescaling
             self.register_buffer(
@@ -163,7 +163,7 @@ class Actor(nn.Module):
         std = log_std.exp()
         normal = Normal(mean, std)
         x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
-        y_t = th.tanh_(x_t)
+        y_t = th.tanh(x_t)
         action = y_t * self.action_scale + self.action_bias
         log_prob = normal.log_prob(x_t)
         # Enforcing Action Bound
@@ -224,4 +224,4 @@ class Actor(nn.Module):
         Returns:
             A tensor with deterministic discrete actions for evaluation.
         """
-        return self.get_discrete_action(x)[0]
+        return th.argmax(self(x))

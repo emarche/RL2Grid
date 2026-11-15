@@ -22,7 +22,7 @@ class CheckpointSaver(ABC):
         self.loaded_run, self.record = {}, {}
         if self.args.resume_run_name:
             checkpoint_name = 'checkpoint/' + self.args.resume_run_name + '.tar'
-            self.loaded_run = th.load(checkpoint_name)
+            self.loaded_run = th.load(checkpoint_name, weights_only=False)
             os.remove(checkpoint_name)
     
     @property
